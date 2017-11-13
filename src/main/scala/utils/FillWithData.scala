@@ -1,13 +1,18 @@
+package utils
+
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-import Main.{companyRepository, passInTripRepository, passengerRepository, tripRepository}
 import models.{Company, PassInTrip, Passenger, Trip}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
 
 object FillWithData {
+  val companyRepository = Main.companyRepository
+  val tripRepository = Main.tripRepository
+  val passengerRepository = Main.passengerRepository
+  val passInTripRepository = Main.passInTripRepository
 
   val formatter = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss")
 
@@ -20,7 +25,7 @@ object FillWithData {
   }
 
   def fillTripsTable(): Unit = {
-    Await.result(tripRepository.create(Trip(1100,4,"Boeing","Rostov","Paris",Option(LocalDateTime.parse("19000101 14:30:00",formatter)),Option(LocalDateTime.parse("19000101 17:50:00", formatter)))), Duration.Inf)
+    Await.result(tripRepository.create(Trip(1100,4,"Boeing","Rostov","Paris",        Option(LocalDateTime.parse("19000101 14:30:00",formatter)),Option(LocalDateTime.parse("19000101 17:50:00", formatter)))), Duration.Inf)
     Await.result(tripRepository.create(Trip(1101,4,"Boeing","Paris","Rostov",        Option(LocalDateTime.parse("19000101 08:12:00",formatter)),Option(LocalDateTime.parse("19000101 11:45:00", formatter)))), Duration.Inf)
     Await.result(tripRepository.create(Trip(1123,3,"TU-154","Rostov","Vladivostok",  Option(LocalDateTime.parse("19000101 16:20:00",formatter)),Option(LocalDateTime.parse("19000101 03:40:00", formatter)))), Duration.Inf)
     Await.result(tripRepository.create(Trip(1124,3,"TU-154","Vladivostok","Rostov",  Option(LocalDateTime.parse("19000101 09:00:00",formatter)),Option(LocalDateTime.parse("19000101 19:50:00", formatter)))), Duration.Inf)

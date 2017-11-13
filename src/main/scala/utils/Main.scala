@@ -1,8 +1,10 @@
+package utils
+
 import models._
 import slick.jdbc.PostgresProfile.api._
 
 import scala.concurrent.Await
-import scala.concurrent.duration._
+import scala.concurrent.duration.Duration
 
 object Main {
   val db = Database.forConfig("scalaxdb")
@@ -11,9 +13,9 @@ object Main {
   val passengerRepository = new PassengerRepository(db)
   val passInTripRepository = new PassInTripRepository(db)
 
-
   def main(args: Array[String]): Unit = {
-    init()
+    //init()
+    fillDatabase()
   }
 
   def init(): Unit ={
@@ -23,5 +25,11 @@ object Main {
     Await.result(db.run(PassInTripTable.table.schema.create), Duration.Inf)
   }
 
+  def fillDatabase(): Unit = {
+    FillWithData.fillCompanyTable()
+    FillWithData.fillPassengerTable()
+    FillWithData.fillTripsTable()
+    FillWithData.fillPassInTrips()
+  }
 
 }

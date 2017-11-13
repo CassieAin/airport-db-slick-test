@@ -17,7 +17,7 @@ case class Trip (
 )
 
 class TripTable(tag: Tag) extends Table[Trip](tag, "trips"){
-  val tripNo = column[Int]("trip_no", O.PrimaryKey, O.AutoInc)
+  val tripNo = column[Int]("trip_no", O.PrimaryKey)
   val idCompFk = column[Int]("id_comp_fk")
   val plane = column[String]("plane")
   val townFrom = column[String]("town_from")

@@ -38,9 +38,11 @@ case class PassInTrip(
 
 class PassInTripTable(tag: Tag) extends Table[PassInTrip](tag, "passengers_in_trip"){
   val tripNoFk = column[Int]("trip_no_fk")
-  val date = column[Option[LocalDateTime]]("date", O.PrimaryKey, O.AutoInc)
+  val date = column[Option[LocalDateTime]]("date")
   val idPsgFk = column[Int]("id_psg_fk")
   val place = column[String]("place")
+
+  def pk = primaryKey("pk_pass_in", (date, tripNoFk, idPsgFk))
 
   val passengerIdFk = foreignKey("passenger_id_fk", idPsgFk, TableQuery[PassengerTable])(_.idPsg)
   val tripIdFk = foreignKey("trip_id_fk", tripNoFk, TableQuery[TripTable])(_.tripNo)
