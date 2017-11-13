@@ -4,6 +4,8 @@ import java.time.LocalDateTime
 
 import slick.jdbc.PostgresProfile.api._
 
+import scala.concurrent.Future
+
 case class Trip (
   tripNo: Int,
   idCompFk: Int,
@@ -15,7 +17,7 @@ case class Trip (
 )
 
 class TripTable(tag: Tag) extends Table[Trip](tag, "trips"){
-  val tripNo = column[Int]("trip_no", O.PrimaryKey)
+  val tripNo = column[Int]("trip_no", O.PrimaryKey, O.AutoInc)
   val idCompFk = column[Int]("id_comp_fk")
   val plane = column[String]("plane")
   val townFrom = column[String]("town_from")
@@ -25,4 +27,15 @@ class TripTable(tag: Tag) extends Table[Trip](tag, "trips"){
 
   val passengerFk = foreignKey("passenger_id_fk", idCompFk, TableQuery[CompanyTable])(_.idComp)
   def * = (tripNo, idCompFk, plane, townFrom, townTo, timeOut, timeIn) <> (Trip.apply _ tupled, Trip.unapply)
+}
+
+object TripTable{
+  val table = TableQuery[TripTable]
+}
+
+class TripRepository(db: Database) {
+  val tripTableQuery = TableQuery[TripTable]
+
+  def create(trip: Trip): Future[Trip] =
+    db.run(tripTableQuery returning tripTableQuery += trip)
 }
