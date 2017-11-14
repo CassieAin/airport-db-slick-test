@@ -29,20 +29,41 @@ class Queries(db: Database) {
   def queryForTask68 = {
     val subquery1 = TripTable.table.filter(t => t.townFrom >= t.townTo)
       .groupBy(t => (t.townFrom, t.townTo))
-      .map{ case ((townFrom, townTo), group) => (group.length ,townFrom, townTo)}
+      .map{ case ((townFrom, townTo), group) => (group.length, townFrom, townTo)}
 
     val subquery2 = TripTable.table.filter(t => t.townTo > t.townFrom)
       .groupBy(t => (t.townFrom, t.townTo))
-      .map{ case ((townFrom, townTo), group) => (group.length ,townFrom, townTo)}
+      .map{ case ((townFrom, townTo), group) => (group.length, townFrom, townTo)}
 
     val t = subquery1 union subquery2
-    val tt = t.map{ case subquery1 => (subquery1._1, subquery1._2, subquery1._3) }
-      .groupBy{case (sub1, sub2, sub3) => (sub2, sub3)}
-      .map{ case ((sub2, sub3), group) => (group.map(_._1).sum.get, sub2, sub3)}
-      .sortBy{ case (sum, sub2, sub3) => sum}
+    val tt = t.map { case subquery1 => (subquery1._1, subquery1._2, subquery1._3) }
+      .groupBy { case (sub1, sub2, sub3) => (sub2, sub3) }
+      .map { case ((sub2, sub3), group) => (group.map(_._1).sum, sub2, sub3) }
+      .sortBy { case (sum, sub2, sub3) => sum }
       .take(1)
-
     db.run(tt.length.result)
+  }
+
+  def queryForTask72 = {
+    val t = (for {
+      pit <- PassInTripTable.table
+      t <- TripTable.table if pit.tripNoFk === t.tripNo
+    } yield (pit, t))
+      .groupBy{case (pit,t) => (pit.idPsgFk, t.idCompFk)}
+      .map{case ((idPsgFk, idCompFk), group) => (idPsgFk, idCompFk, group.length)}
+
+    val tt = t.filter{case (idPsgFk, idCompFk, count) => count === 1}
+      .groupBy{ case (idPsgFk, idCompFk, count) => idPsgFk}
+      .map{ case (idPsgFk, group) => (idPsgFk, group.map(_._1).max)}
+
+    val query = (for {
+      p <- PassengerTable.table
+      t <- tt if p.idPsg === t._1
+    } yield (p, t))
+      .map{ case (p,t) => (p.name, t._2)}
+      .sortBy(_._2)
+      .take(1)
+    db.run(query.result)
   }
 
   def queryForTask77 = {
