@@ -1,7 +1,11 @@
 package tasks
 
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+
 import models._
 import slick.jdbc.PostgresProfile.api._
+import utils.Main.formatter
 
 class Queries(db: Database) {
 
@@ -86,9 +90,8 @@ class Queries(db: Database) {
       pit <- PassInTripTable.table if t.tripNo === pit.tripNoFk
     } yield (c, t, pit))
       .groupBy { case (c, t, pit) => (c.idComp, c.name) }
-      .map { case ((c, t, pit), group) => (group.map(_._1.name).countDistinct, group.map(_._2.tripNo).countDistinct,
-        group.map(_._2.plane).countDistinct, group.map(_._3.idPsgFk).countDistinct, group.length)
-      }
+     // .map { case ((c, t, pit), group) => (group.map(_._1.name).countDistinct, group.map(_._2.tripNo).countDistinct,
+      //  group.map(_._2.plane).countDistinct, group.map(_._3.idPsgFk).countDistinct, group.length)}
 
     db.run(query.result)
   }
@@ -102,6 +105,39 @@ class Queries(db: Database) {
       .groupBy{case (t, tt, ttt) => (t, tt, ttt)}
       .map{ case ((t, tt, ttt),group) => (group.map(_._1).min, group.map(_._1).max,
         group.map(_._2).min, group.map(_._2).max, group.map(_._3).min, group.map(_._3).max)}
-    println(query.result.statements)
+    db.run(query.result)
+  }
+
+  def queryForTask107 = {
+    val date = Option(LocalDateTime.parse("20030401 00:00:00", formatter))
+    val subquery = (for {
+      c <- CompanyTable.table
+      t <- TripTable.table if c.idComp === t.idCompFk
+      pit <- PassInTripTable.table if t.tripNo === pit.tripNoFk
+    } yield (c, t, pit))
+      .filter { case (c, t, pit) => (t.townFrom === "Rostov") && (t.timeOut <= date) }
+      .map { case (c, t, pit) => (t.timeOut, pit.idPsgFk, c.name, t.tripNo) }
+      .sortBy { case (date, pid, name, tripNo) => (date, pid) }
+      .take(5)
+      .drop(4)
+
+    val query = subquery.map { case (date, pid, name, tripNo) => (date, name, tripNo) }
+
+    db.run(query.result)
+  }
+
+  def queryForTask110 = {
+
+    def days(t1: LocalDateTime, t2: LocalDateTime) = ChronoUnit.DAYS.between(t1, t2)
+
+    val subquery = (for {
+      pit <- PassInTripTable.table
+      t <- TripTable.table if pit.tripNoFk === t.tripNo
+    } yield (pit, t))
+      .filter{ case (pit,t) => (t.timeIn < t.timeOut) }
+      .map(_._1.idPsgFk)
+
+    val query = PassengerTable.table.filter(_.idPsg in subquery).map(_.name)
+    db.run(query.result)
   }
 }

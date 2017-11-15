@@ -25,8 +25,4 @@ class CompanyRepository(db: Database) {
 
   def create(company: Company): Future[Company] =
     db.run(companyTableQuery returning companyTableQuery += company)
-
-  def createInBatch(companies: List[Company]) =
-    for(company <- companies) create(company)
-    //companies.foreach(create(_))
 }
