@@ -78,4 +78,16 @@ class Queries(db: Database) {
     val query = x.sortBy(_._1.desc).take(1)
     db.run(query.result)
   }
+
+  def queryForTask103 = {
+    val query = (for {
+      t <- TripTable.table
+      tt <- TripTable.table  if t.tripNo < tt.tripNo
+      ttt <- TripTable.table  if tt.tripNo < ttt.tripNo
+    } yield (t.tripNo, tt.tripNo, ttt.tripNo))
+      .groupBy{case (t, tt, ttt) => (t, tt, ttt)}
+      .map{ case ((t, tt, ttt),group) => (group.map(_._1).min, group.map(_._1).max,
+        group.map(_._2).min, group.map(_._2).max, group.map(_._3).min, group.map(_._3).max)}
+    println(query.result.statements)
+  }
 }
