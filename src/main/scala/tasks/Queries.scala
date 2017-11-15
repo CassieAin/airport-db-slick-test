@@ -79,6 +79,20 @@ class Queries(db: Database) {
     db.run(query.result)
   }
 
+  def queryForTask95 = {
+    val query = (for {
+      c <- CompanyTable.table
+      t <- TripTable.table if c.idComp === t.idCompFk
+      pit <- PassInTripTable.table if t.tripNo === pit.tripNoFk
+    } yield (c, t, pit))
+      .groupBy { case (c, t, pit) => (c.idComp, c.name) }
+      .map { case ((c, t, pit), group) => (group.map(_._1.name).countDistinct, group.map(_._2.tripNo).countDistinct,
+        group.map(_._2.plane).countDistinct, group.map(_._3.idPsgFk).countDistinct, group.length)
+      }
+
+    db.run(query.result)
+  }
+
   def queryForTask103 = {
     val query = (for {
       t <- TripTable.table
