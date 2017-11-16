@@ -235,4 +235,23 @@ object Queries {
 
     println(query.result.statements)
   }
-}
+
+  def queryForTask87 = {
+    val datetime = (for {
+      pit1 <- PassInTripTable.table
+      tr1 <- TripTable.table if pit1.tripNoFk === tr1.tripNo
+    } yield (pit1, tr1))
+      .map { case (pit1, tr1) => (Case.If(pit1.date < tr1.timeOut).Then(pit1.date).Else(tr1.timeOut)) }
+
+    val mjoin = (for {
+      pit1 <- PassInTripTable.table
+      tr1 <- TripTable.table if pit1.tripNoFk === tr1.tripNo
+    } yield (pit1, tr1))
+      .filter { case (pit1, tr1) => (tr1.townFrom === "Moscow") }
+      .map(_._1.idPsgFk)
+
+    db.run(mjoin.result)
+  }
+
+
+  }

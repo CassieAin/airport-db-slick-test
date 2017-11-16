@@ -1,7 +1,10 @@
 package utils
 
+import java.time.format.DateTimeFormatter
+
 import models._
 import slick.jdbc.PostgresProfile.api._
+import tasks.Queries
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -12,10 +15,12 @@ object Main {
   val tripRepository = new TripRepository(db)
   val passengerRepository = new PassengerRepository(db)
   val passInTripRepository = new PassInTripRepository(db)
+  val formatter = DateTimeFormatter.ofPattern("yyyyMMdd HH:mm:ss")
 
   def main(args: Array[String]): Unit = {
-    //init()
+    init()
     fillDatabase()
+    Queries.queryForTask63
   }
 
   def init(): Unit ={
