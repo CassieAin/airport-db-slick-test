@@ -1,11 +1,7 @@
 package tasks
 
-import java.time.LocalDateTime
-import java.time.temporal.ChronoUnit
-
 import models._
 import slick.jdbc.PostgresProfile.api._
-import utils.Main.formatter
 
 object Queries {
   val db = Database.forConfig("scalaxdb")
@@ -230,8 +226,8 @@ object Queries {
       t1 <- t1 if tr.tripNo === t1._1
     } yield (tr.townFrom, t1))
       .filter(_._1 === "Rostov")
-      .groupBy(_._2._2)
-      .map{ case t1 => (t1._2.length, t1._1)}
+        .groupBy(_._2._2)
+          .map{ case t1 => (t1._2.length, t1._1)}
 
     println(query.result.statements)
   }
@@ -243,15 +239,23 @@ object Queries {
     } yield (pit1, tr1))
       .map { case (pit1, tr1) => (Case.If(pit1.date < tr1.timeOut).Then(pit1.date).Else(tr1.timeOut)) }
 
-    val mjoin = (for {
+    val subquery = (for {
       pit1 <- PassInTripTable.table
       tr1 <- TripTable.table if pit1.tripNoFk === tr1.tripNo
     } yield (pit1, tr1))
       .filter { case (pit1, tr1) => (tr1.townFrom === "Moscow") }
-      .map(_._1.idPsgFk)
+        .map(_._1.idPsgFk)
 
-    db.run(mjoin.result)
+    val query = (for {
+      t <- TripTable.table
+      pit <- PassInTripTable.table if t.tripNo === pit.tripNoFk
+      p <- PassengerTable.table if pit.idPsgFk === p.idPsg
+    } yield (t, pit, p))
+        .filter { case (t, pit, p) => (t.townTo === "Moscow") && !(pit.tripNoFk in subquery) }
+            /*.groupBy{ case (t, pit, p) => (pit.idPsgFk, p.name)}
+                  .filter{ case (t, pit, p) => (pit.map(_._1.townTo).length > 1)}
+                .map{ case (t, pit, p) => (pit.map(_._2.idPsgFk), pit.map(_._1.townTo).length)}*/
+
+    db.run(query.result)
   }
-
-
-  }
+}
