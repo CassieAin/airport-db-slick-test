@@ -83,7 +83,52 @@ object Queries {
     db.run(query.result)
   }
 
-  /*!!!!!!!!!!!!!!!!!!!!*/
+  def queryForTask84 = {
+    val decade1 = Option(LocalDateTime.parse("20030401 00:00:00", formatter))
+    val decade2 = Option(LocalDateTime.parse("20030410 00:00:00", formatter))
+    val decade3 = Option(LocalDateTime.parse("20030420 00:00:00", formatter))
+
+    val subquery1 = (for {
+      t <- TripTable.table
+      pit <- PassInTripTable.table if t.tripNo === pit.tripNoFk
+    } yield (t.idCompFk, pit.date))
+      //.groupBy(_._1)
+      .map{ case (tid, pitd) => (tid, Case.If(pitd <= decade2).Then(1).Else(0), Case.If(pitd > decade2 && pitd <= decade3).Then(1).Else(0),
+      Case.If(pitd > decade3).Then(1).Else(0)) }
+
+    val query = (for {
+      c <- CompanyTable.table
+      s <- subquery1 if c.idComp === s._1
+    } yield (c, s))
+      .map{ case (c, s) => (c.name, s._2, s._3, s._4)}
+    //.map{ case (c, s) => (s.map(_._1.name), s.map(_._2._2).sum, s.map(_._2._3).sum, s.map(_._2._4).sum)}
+
+    db.run(query.result)
+  }
+
+    def queryForTask88 = {
+      val b = (for {
+          pit <- PassInTripTable.table
+          t <- TripTable.table if pit.tripNoFk === t.tripNo
+      } yield (pit, t))
+          .groupBy(_._1.idPsgFk)
+            .filter{ case (pit, t) => ((t.map(_._2.idCompFk).min) === (t.map(_._2.idCompFk).max))}
+             .map{ case (pit, t) => (t.map(_._1.idPsgFk), t.map(_._2.idCompFk).min, t.map(_._2).length) }
+
+      val idComp = b.map{case (psgid, minid, count) => minid}
+      val idPsg = b.map{case (psgid, minid, count) => psgid}
+      val count = b.map{case (psgid, minid, count) => count}
+
+      val pass = PassengerTable.table
+          .filter{ case p => (p.idPsg === idPsg)}
+            .map(_.name)
+      val companyQ = CompanyTable.table
+          .filter{ case c => (c.idComp === idComp)}
+            .map(_.name)
+      val subquery = b.map{ case (psgid, minid, count) => (pass, count, companyQ)}
+    println(b.result.statements)
+  }
+
   def queryForTask95 = {
     val query = (for {
       c <- CompanyTable.table
@@ -140,7 +185,6 @@ object Queries {
     db.run(query.result)
   }
 
-  /*!!!!!!!!!!!!!!!!!!!!*/
   def queryForTask110 = {
 
     def days(t1: LocalDateTime, t2: LocalDateTime) = ChronoUnit.DAYS.between(t1, t2)
@@ -154,18 +198,8 @@ object Queries {
 
     val query = PassengerTable.table.filter(_.idPsg in subquery).map(_.name)
     db.run(query.result)
-
-    /*
-
-   select name from passenger where id_psg in
-      (select id_psg
-       from pass_in_trip pit join trip t on pit.trip_no = t.trip_no
-       where time_in < time_out and datepart(dw, date) = 7
-      )
-    */
   }
 
-  /*!!!!!!!!!!!!!!!!!!!!*/
   def queryForTask114 = {
     val b = PassInTripTable.table
       .groupBy{ case pit => (pit.idPsgFk, pit.place)}
@@ -182,13 +216,23 @@ object Queries {
       .map{ case (p, b1) => (p.name, b1._2)}
 
     db.run(query.result)
+  }
 
-    /*
-      WITH b AS
-      (SELECT ID_psg, COUNT(*) as cnt FROM Pass_In_Trip GROUP BY ID_psg, place),
-      b1 AS
-        (SELECT DISTINCT ID_psg, cnt FROM b WHERE cnt =(SELECT MAX(cnt) FROM b))
-      SELECT name, cnt FROM b1 JOIN Passenger p ON (b1.ID_psg = p.ID_psg)
-    */
+  def queryForTask66 = {
+    val date1 = Option(LocalDateTime.parse("20030401 00:00:00",formatter))
+    val date2 = Option(LocalDateTime.parse("20030407 00:00:00",formatter))
+    val t1 = PassInTripTable.table
+      .filter{ case p => ((p.date >= date1) && (p.date <= date2))}
+      .map(p => (p.idPsgFk, p.date))
+
+    val query = (for {
+      tr <- TripTable.table
+      t1 <- t1 if tr.tripNo === t1._1
+    } yield (tr.townFrom, t1))
+      .filter(_._1 === "Rostov")
+      .groupBy(_._2._2)
+      .map{ case t1 => (t1._2.length, t1._1)}
+
+    println(query.result.statements)
   }
 }
